@@ -2,6 +2,8 @@
 #include "Shader.h"
 
 #include "GL/glew.h"
+#include "glm/gtx/transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 GLfloat cubeVertices[] = {
 	-0.5f, -0.5f, -0.5f,
@@ -13,35 +15,35 @@ GLfloat cubeVertices[] = {
 	 0.5f,  0.5f, -0.5f,
 	 0.5f,  0.5f,  0.5f,
 
-	-0.55f, -0.45f, -0.45f,
-	-0.55f, -0.45f,  0.45f,
-	-0.55f,  0.45f, -0.45f,
-	-0.55f,  0.45f,  0.45f,
+	-0.51f, -0.45f, -0.45f,
+	-0.51f, -0.45f,  0.45f,
+	-0.51f,  0.45f, -0.45f,
+	-0.51f,  0.45f,  0.45f,
 
-	 0.55f, -0.45f, -0.45f,
-	 0.55f, -0.45f,  0.45f,
-	 0.55f,  0.45f, -0.45f,
-	 0.55f,  0.45f,  0.45f,
+	 0.51f, -0.45f, -0.45f,
+	 0.51f, -0.45f,  0.45f,
+	 0.51f,  0.45f, -0.45f,
+	 0.51f,  0.45f,  0.45f,
 
-	-0.45f, -0.55f, -0.45f,
-	-0.45f, -0.55f,  0.45f,
-	 0.45f, -0.55f, -0.45f,
-	 0.45f, -0.55f,  0.45f,
+	-0.45f, -0.51f, -0.45f,
+	-0.45f, -0.51f,  0.45f,
+	 0.45f, -0.51f, -0.45f,
+	 0.45f, -0.51f,  0.45f,
 
-	-0.45f,  0.55f, -0.45f,
-	-0.45f,  0.55f,  0.45f,
-	 0.45f,  0.55f, -0.45f,
-	 0.45f,  0.55f,  0.45f,
+	-0.45f,  0.51f, -0.45f,
+	-0.45f,  0.51f,  0.45f,
+	 0.45f,  0.51f, -0.45f,
+	 0.45f,  0.51f,  0.45f,
 
-	-0.45f, -0.45f, -0.55f,
-	-0.45f,  0.45f, -0.55f,
-	 0.45f, -0.45f, -0.55f,
-	 0.45f,  0.45f, -0.55f,
+	-0.45f, -0.45f, -0.51f,
+	-0.45f,  0.45f, -0.51f,
+	 0.45f, -0.45f, -0.51f,
+	 0.45f,  0.45f, -0.51f,
 
-	-0.45f, -0.45f,  0.55f,
-    -0.45f,  0.45f,  0.55f,
-	 0.45f, -0.45f,  0.55f,
-	 0.45f,  0.45f,  0.55f,
+	-0.45f, -0.45f,  0.51f,
+    -0.45f,  0.45f,  0.51f,
+	 0.45f, -0.45f,  0.51f,
+	 0.45f,  0.45f,  0.51f,
 };
 
 GLuint cubeIndices[] = {
@@ -156,13 +158,21 @@ Renderer::Renderer(Cube c) {
 
 	glBindVertexArray(0);
 };
-
+#include <iostream>
 void Renderer::Draw() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.8f, 0.8f, 0.8f, 1);
 
+	glm::mat4 model;
+	model = glm::scale(model, glm::vec3(0.333f, 0.333f, 0.333f));
+	model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0, 0, 1));
+	model = glm::rotate(model, glm::radians(40.0f), glm::vec3(0, 1, 0));
+	model = glm::rotate(model, glm::radians(220.0f), glm::vec3(1, 0, 0));
 	glUseProgram(shaderProgram);
+
 	glBindVertexArray(vertexArray);
+	GLuint camera = glGetUniformLocation(shaderProgram, "camera");
+	glUniformMatrix4fv(camera, 1, GL_FALSE, glm::value_ptr(model));
 
 	glDrawElements(GL_TRIANGLES, sizeof(cubeIndices), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
