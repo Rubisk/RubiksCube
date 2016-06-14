@@ -23,10 +23,9 @@ int main()
 
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-	GLFWwindow* window = glfwCreateWindow(800, 800, "OpenGL", nullptr, nullptr); // Windowed
+	GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL", nullptr, nullptr); // Windowed
 
 	glfwMakeContextCurrent(window);
-
 	// Setup GLEW
 	glewExperimental = GL_TRUE;
 	glewInit();
@@ -42,7 +41,7 @@ int main()
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
-		renderer.Draw();
+		renderer.Draw(window);
 		glfwSwapBuffers(window);
 	}
 

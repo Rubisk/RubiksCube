@@ -3,6 +3,8 @@
 
 #include "Cube.h"
 #include "GL/glew.h"
+#include "GLFW/glfw3.h"
+#include "Camera.h"
 
 
 class Renderer
@@ -12,7 +14,7 @@ public:
 
 	Renderer::~Renderer();
 	
-	void Draw();
+	void Draw(GLFWwindow* window);
 private:
 	GLuint shaderProgram;
 
@@ -22,6 +24,8 @@ private:
 	GLuint colorIndexBuffer;
 
 	Cube cube;
+
+	Camera camera;
 
 	GLuint vertexArray;
 };

@@ -4,6 +4,7 @@
 #include "GL/glew.h"
 #include "glm/gtx/transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 GLfloat cubeVertices[] = {
 	-0.5f, -0.5f, -0.5f,
@@ -158,23 +159,47 @@ Renderer::Renderer(Cube c) {
 
 	glBindVertexArray(0);
 };
-#include <iostream>
-void Renderer::Draw() {
+
+void Renderer::Draw(GLFWwindow* window) {
+
+	// TODO move this out of draw loop
+	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) camera.Rotate(Up, 0.01f);
+	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) camera.Rotate(Down, 0.01f);
+	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) camera.Rotate(Left, 0.01f);
+	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) camera.Rotate(Right, 0.01f);
+	if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) camera.Rotate(TiltLeft, 0.01f);
+	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) camera.Rotate(TiltRight, 0.01f);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.8f, 0.8f, 0.8f, 1);
 
-	glm::mat4 model;
-	model = glm::scale(model, glm::vec3(0.333f, 0.333f, 0.333f));
-	model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0, 0, 1));
-	model = glm::rotate(model, glm::radians(40.0f), glm::vec3(0, 1, 0));
-	model = glm::rotate(model, glm::radians(220.0f), glm::vec3(1, 0, 0));
 	glUseProgram(shaderProgram);
-
 	glBindVertexArray(vertexArray);
-	GLuint camera = glGetUniformLocation(shaderProgram, "camera");
-	glUniformMatrix4fv(camera, 1, GL_FALSE, glm::value_ptr(model));
 
-	glDrawElements(GL_TRIANGLES, sizeof(cubeIndices), GL_UNSIGNED_INT, 0);
+	GLuint modelUni = glGetUniformLocation(shaderProgram, "model");
+	GLuint cameraUni = glGetUniformLocation(shaderProgram, "camera");
+	GLuint projectionUni = glGetUniformLocation(shaderProgram, "projection");
+
+	glm::mat4 cameraMatrix = camera.GetCameraMatrix();
+	glUniformMatrix4fv(cameraUni, 1, GL_FALSE, glm::value_ptr(cameraMatrix));
+
+	glm::mat4 projection = glm::perspective(glm::radians(55.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+	glUniformMatrix4fv(projectionUni, 1, GL_FALSE, glm::value_ptr(projection));
+
+	const float size = 0.150f;
+
+	for (int ix = 0; ix < 3; ix++) {
+		for (int iy = 0; iy < 3; iy++) {
+			for (int iz = 0; iz < 3; iz++) {
+				glm::mat4 model;
+				model = glm::translate(model, glm::vec3(size * (ix - 1), size * (iy - 1), size * (iz - 1)));
+				model = glm::scale(model, glm::vec3(size, size, size));
+				glUniformMatrix4fv(modelUni, 1, GL_FALSE, glm::value_ptr(model));
+
+				glDrawElements(GL_TRIANGLES, sizeof(cubeIndices), GL_UNSIGNED_INT, 0);
+			}
+		}
+	}
 	glBindVertexArray(0);
 };
 
