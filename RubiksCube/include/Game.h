@@ -4,13 +4,26 @@
 #include "Cube.h"
 #include "Camera.h"
 #include "InputHandler.h"
+#include "Renderer.h"
+
 
 class Game {
 public:
 	Game();
 
-	Camera camera;
-	Cube cube;
+	void Start();
+
+	void Stop();
+
+	void RotateCube(Axis axis, int side, int direction);
+	std::shared_ptr<Renderer> renderer;
+	std::shared_ptr<Camera> camera;
+	std::shared_ptr<Cube> cube;
+
+protected:
+	GLFWwindow* window;
+
+	bool Tick_();
 };
 
 #endif

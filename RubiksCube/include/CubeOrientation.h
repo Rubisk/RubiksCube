@@ -21,15 +21,16 @@ public:
 	CubeOrientation();
 	// Returns the minimal amount of rotations needed to get an object
 	// in this orientation.
-	std::queue<Rotation> GetRotations();
+ 	std::queue<Rotation> GetRotations();
 
 	void Rotate(Axis around, int times);
+
+	int topSide;
+	int rightSide;
 
 private:
 	void _Rotate(Axis around);
 
-	int topSide;
-	int rightSide;
 };
 
 #endif

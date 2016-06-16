@@ -11,7 +11,9 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
-glm::mat4 OrientationToMatrix(CubeOrientation orientation) {
+const std::time_t animationTime = 400;
+
+glm::mat4 OrientationToMatrix__(CubeOrientation orientation) {
 	glm::mat4 matrix;
 	std::queue<Rotation> rotations = orientation.GetRotations();
 	while (!rotations.empty()) {
@@ -150,22 +152,9 @@ GLfloat colorVertices[] = {
 	0.0f, 0.7f, 0.0f,
 };
 
-Renderer::Renderer(std::shared_ptr<Game> g) {
-	game = g;
-
-	if (!glfwInit())
-		std::cout << "Failed to initialize glfw.";
-
-	// Setup some options and open the window
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-	window = glfwCreateWindow(800, 600, "OpenGL", nullptr, nullptr); // Windowed
-	glfwMakeContextCurrent(window);
-
-	glfwSetKeyCallback(window, (GLFWkeyfun) InputHandler::KeyCallBack);
+Renderer::Renderer(std::weak_ptr<Cube> cube, std::weak_ptr<Camera> camera) {
+	cube_ = cube;
+	camera_ = camera;
 
 	// Setup GLEW
 	glewExperimental = GL_TRUE;
@@ -176,7 +165,7 @@ Renderer::Renderer(std::shared_ptr<Game> g) {
 
 	shaderProgram = CreateShaderProgram("shaders/shader.vs", "shaders/shader.frag");
 	LoadCubeVertices();
-};
+}
 
 void Renderer::LoadCubeVertices() {
 	glGenVertexArrays(1, &vertexArray);
@@ -204,7 +193,11 @@ void Renderer::LoadCubeVertices() {
 	glBindVertexArray(0);
 }
 
-bool Renderer::Draw() {
+void Renderer::Draw() {
+	if (camera_.expired() || cube_.expired()) return;
+	std::shared_ptr<Camera> camera = camera_.lock();
+	std::shared_ptr<Cube> cube = cube_.lock();
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.8f, 0.8f, 0.8f, 1);
 
@@ -215,7 +208,7 @@ bool Renderer::Draw() {
 	GLuint cameraUni = glGetUniformLocation(shaderProgram, "camera");
 	GLuint projectionUni = glGetUniformLocation(shaderProgram, "projection");
 
-	glm::mat4 cameraMatrix = game->camera.GetCameraMatrix();
+	glm::mat4 cameraMatrix = camera->GetCameraMatrix();
 	glUniformMatrix4fv(cameraUni, 1, GL_FALSE, glm::value_ptr(cameraMatrix));
 
 	glm::mat4 projection = glm::perspective(glm::radians(55.0f), 800.0f / 600.0f, 0.1f, 100.0f);
@@ -227,27 +220,62 @@ bool Renderer::Draw() {
 		for (int iy = 0; iy < 3; iy++) {
 			for (int iz = 0; iz < 3; iz++) {
 				glm::mat4 model;
-				model = OrientationToMatrix(game->cube.blocks[ix][iy][iz]) * model;
+				model = OrientationToMatrix__(cube->blocks[ix][iy][iz]) * model;
 				model = glm::translate(model, glm::vec3(glm::inverse(model) * glm::vec4(size * (ix - 1), size * (iy - 1), size * (iz - 1), 1)));
+				model = _GetAnimateBlockMatrix(ix, iy, iz) * model;
 				model = glm::scale(model, glm::vec3(size, size, size));
 				glUniformMatrix4fv(modelUni, 1, GL_FALSE, glm::value_ptr(model));
 				glDrawElements(GL_TRIANGLES, sizeof(cubeIndices), GL_UNSIGNED_INT, 0);
 			}
 		}
 	}
-
+	if (shouldStopAnimating_) isAnimating_ = false;
 	glBindVertexArray(0);
-
-	glfwSwapBuffers(window);
-	glfwPollEvents();
-	return !glfwWindowShouldClose(window);
 };
+
+bool Renderer::IsAnimating() {
+	return isAnimating_;
+}
+
+void Renderer::StartTurnAnimation(Axis axis, int side, int direction) {
+	animationAxis = axis;
+	animationSide = side;
+	animationDirection = direction;
+	animationStartTime = std::clock();
+	isAnimating_ = true;
+}
+
+glm::mat4 Renderer::_GetAnimateBlockMatrix(int x, int y, int z) {
+	glm::mat4 animateMatrix;
+
+	std::time_t currentTime = (std::clock() > animationStartTime + animationTime) ? animationStartTime + animationTime : std::clock();
+
+	float distance = ((float) currentTime - animationStartTime) / animationTime * glm::pi<float>() / 2;
+
+	if (IsAnimating()) {
+		switch (animationAxis) {
+		case X:
+			if (x == animationSide + 1)
+				animateMatrix = glm::rotate(animationDirection * distance, glm::vec3(1, 0, 0));
+			break;
+		case Y:
+			if (y == animationSide + 1)
+				animateMatrix = glm::rotate(animationDirection * distance, glm::vec3(0, 1, 0));
+			break;
+		case Z:
+			if (z == animationSide + 1)
+				animateMatrix = glm::rotate(animationDirection * distance, glm::vec3(0, 0, 1));
+			break;
+		}
+	}
+
+	shouldStopAnimating_ = (currentTime == animationStartTime + animationTime);
+	return animateMatrix;
+}
 
 Renderer::~Renderer() {
 	glDeleteVertexArrays(1, &vertexArray);
 	glDeleteBuffers(1, &vertexBuffer);
 	glDeleteBuffers(1, &elementBuffer);
 	glDeleteBuffers(1, &colorBuffer);
-	glfwWindowShouldClose(window);
-	glfwTerminate();
 }

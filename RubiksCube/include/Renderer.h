@@ -9,22 +9,26 @@
 
 #include "Cube.h"
 #include "Camera.h"
-#include "Game.h"
 
 class Renderer
 {
 public:
-	Renderer(std::shared_ptr<Game> game);
+	Renderer(std::weak_ptr<Cube> cube, std::weak_ptr<Camera>);
 
-	Renderer::~Renderer();
-	
-	bool Draw();
+	void StartTurnAnimation(Axis axis, int side, int direction);
+
+	bool IsAnimating();
+
+	void Draw();
+
+	~Renderer();
 private:
-	std::shared_ptr<Game> game;
-
 	void LoadCubeVertices();
 
-	GLFWwindow* window;
+	glm::mat4 _GetAnimateBlockMatrix(int x, int y, int z);
+
+	std::weak_ptr<Cube> cube_;
+	std::weak_ptr<Camera> camera_;
 
 	GLuint shaderProgram;
 	GLuint vertexArray;
@@ -33,9 +37,13 @@ private:
 	GLuint elementBuffer;
 	GLuint colorBuffer;
 
-	Cube cube;
-
 	std::clock_t timeSinceLastFrame;
+	std::clock_t animationStartTime;
+	Axis animationAxis;
+	int animationSide;
+	int animationDirection;
+	bool isAnimating_;
+	bool shouldStopAnimating_;
 };
 
 #endif

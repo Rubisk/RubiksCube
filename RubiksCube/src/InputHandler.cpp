@@ -1,74 +1,109 @@
-#include <iostream>
-
 #include "InputHandler.h"
 #include "Game.h"
 
 
-std::weak_ptr<Game> InputHandler::game;
+Game* InputHandler::game_;
 
-void InputHandler::SetGame(std::weak_ptr<Game> game) {
-	InputHandler::game = game;
+bool InputHandler::stallGameplayInputs_;
+
+struct InputHandler::Input {
+    GLFWwindow* window;
+	GLint key;
+	GLint scancode;
+	GLint action;
+	GLint mods;
+};
+
+std::queue<InputHandler::Input> InputHandler::stalledInputs_;
+
+void InputHandler::SetGame(Game* game) {
+	InputHandler::game_ = game;
+}
+
+void InputHandler::StallGameplayInputs(bool setting) {
+	// if (stallGameplayInputs_ == setting) return;
+	stallGameplayInputs_ = setting;
+	TryProcessStalledInputs_();
+}
+
+void InputHandler::TryProcessStalledInputs_() {
+	while (!stalledInputs_.empty() && !stallGameplayInputs_) {
+		Input input = stalledInputs_.front();
+		stalledInputs_.pop();
+		KeyCallBack(input.window, input.key, input.scancode, input.action, input.mods);
+	}
 }
 
 void InputHandler::KeyCallBack(GLFWwindow* window, GLint key, GLint scancode, GLint action, GLint mods) {
+	if (game_ == nullptr) return;
 
-	if (game.expired()) return;
-
-	std::shared_ptr<Game> g = game.lock();
 	switch (key) {
 	case GLFW_KEY_I:
 		if (action == GLFW_PRESS)
-			g->camera.StartRotate(Up);
+			game_->camera->StartRotate(Up);
 		else if (action == GLFW_RELEASE)
-			g->camera.StopRotate(Up);
-		break;
+			game_->camera->StopRotate(Up);
+		return;
 	case GLFW_KEY_K:
 		if (action == GLFW_PRESS)
-			g->camera.StartRotate(Down);
+			game_->camera->StartRotate(Down);
 		else if (action == GLFW_RELEASE)
-			g->camera.StopRotate(Down);
-		break;
+			game_->camera->StopRotate(Down);
+		return;
 	case GLFW_KEY_J:
 		if (action == GLFW_PRESS)
-			g->camera.StartRotate(Left);
+			game_->camera->StartRotate(Left);
 		else if (action == GLFW_RELEASE)
-			g->camera.StopRotate(Left);
-		break;
+			game_->camera->StopRotate(Left);
+		return;
 	case GLFW_KEY_L:
 		if (action == GLFW_PRESS)
-			g->camera.StartRotate(Right);
+			game_->camera->StartRotate(Right);
 		else if (action == GLFW_RELEASE)
-			g->camera.StopRotate(Right);
-		break;
+			game_->camera->StopRotate(Right);
+		return;
 	case GLFW_KEY_U:
 		if (action == GLFW_PRESS)
-			g->camera.StartRotate(TiltLeft);
+			game_->camera->StartRotate(TiltLeft);
 		else if (action == GLFW_RELEASE)
-			g->camera.StopRotate(TiltLeft);
-		break;
+			game_->camera->StopRotate(TiltLeft);
+		return;
 	case GLFW_KEY_O:
 		if (action == GLFW_PRESS)
-			g->camera.StartRotate(TiltRight);
+			game_->camera->StartRotate(TiltRight);
 		else if (action == GLFW_RELEASE)
-			g->camera.StopRotate(TiltRight);
-		break;
-	case GLFW_KEY_Q:
-		if (action == GLFW_PRESS) {
-			g->cube.blocks[0][0][0].Rotate(X, 90);
-			// g->cube.blocks[0][1][1].Rotate(X, 90);
+			game_->camera->StopRotate(TiltRight);
+		return;
+	}
+	if (stallGameplayInputs_) {
+		Input input;
+		input.window = window;
+		input.key = key;
+		input.action = action;
+		input.scancode = scancode;
+		input.mods = mods;
+		stalledInputs_.push(input);
+	}
+	else {
+		switch (key) {
+		case GLFW_KEY_Q:
+			if (action == GLFW_PRESS) {
+				int side = (mods && GLFW_MOD_SHIFT) ? -1 : 1;
+				game_->RotateCube(X, side, 1);
+			}
+			break;
+		case GLFW_KEY_W:
+			if (action == GLFW_PRESS) {
+				int side = (mods && GLFW_MOD_SHIFT) ? -1 : 1;
+				game_->RotateCube(Y, side, 1);
+			}
+			break;
+		case GLFW_KEY_E:
+			if (action == GLFW_PRESS) {
+				int side = (mods && GLFW_MOD_SHIFT) ? -1 : 1;
+				game_->RotateCube(Z, side, 1);
+			}
+			break;
 		}
-		break;
-	case GLFW_KEY_W:
-		if (action == GLFW_PRESS) {
-			g->cube.blocks[0][0][0].Rotate(Y, 90);
-			// g->cube.blocks[0][1][1].Rotate(Y, 90);
-		}
-		break;
-	case GLFW_KEY_E:
-		if (action == GLFW_PRESS) {
-			g->cube.blocks[0][0][0].Rotate(Z, 90);
-			// g->cube.blocks[0][1][1].Rotate(Z, 90);
-		}
-		break;
 	}
 }

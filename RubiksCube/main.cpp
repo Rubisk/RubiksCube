@@ -12,11 +12,7 @@
 int main()
 {
 	std::shared_ptr<Game> game = std::make_shared<Game>();
-	InputHandler::SetGame(game);
-
-	Renderer renderer = Renderer(game);
-
-	while (renderer.Draw());
+	game->Start();
 
     return 0;
 }

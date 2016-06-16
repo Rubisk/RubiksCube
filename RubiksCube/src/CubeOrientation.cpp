@@ -13,8 +13,8 @@ int Mod(int x, int y) {
 	return x % y;
 }
 
-void CubeOrientation::Rotate(Axis around, int angle) {
-	for (int i = 0; i < angle / 90; i++) {
+void CubeOrientation::Rotate(Axis around, int times) {
+	for (int i = 0; i < times; i++) {
 		if (around == Z) {
 			_Rotate(X);
 			_Rotate(Y);
@@ -47,7 +47,6 @@ void CubeOrientation::_Rotate(Axis around) {
 		}
 	}
 	else {
-
 		// Right side won't change when turning around X, since right = +X.
 		switch (rightSide) {
 		case 0:
