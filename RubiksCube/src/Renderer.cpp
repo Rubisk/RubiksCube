@@ -1,10 +1,31 @@
+#include <iostream>
+#include <queue>
+
 #include "Renderer.h"
 #include "Shader.h"
+#include "InputHandler.h"
+#include "CubeOrientation.h"
 
 #include "GL/glew.h"
 #include "glm/gtx/transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+
+glm::mat4 OrientationToMatrix(CubeOrientation orientation) {
+	glm::mat4 matrix;
+	std::queue<Rotation> rotations = orientation.GetRotations();
+	while (!rotations.empty()) {
+		Rotation r = rotations.front();
+		glm::vec3 axis = glm::vec3(0, 0, 0);
+		if (r.axis == X) axis[0] = 1;
+		if (r.axis == Y) axis[1] = 1;
+		if (r.axis == Z) axis[2] = 1;
+		axis = glm::vec3(matrix * glm::vec4(axis, 0));
+		matrix = glm::rotate(matrix, glm::radians(r.angle), axis);
+		rotations.pop();
+	}
+	return matrix;
+}
 
 GLfloat cubeVertices[] = {
 	-0.5f, -0.5f, -0.5f,
@@ -129,16 +150,39 @@ GLfloat colorVertices[] = {
 	0.0f, 0.7f, 0.0f,
 };
 
-Renderer::Renderer(Cube c) {
-	cube = c;
+Renderer::Renderer(std::shared_ptr<Game> g) {
+	game = g;
+
+	if (!glfwInit())
+		std::cout << "Failed to initialize glfw.";
+
+	// Setup some options and open the window
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	window = glfwCreateWindow(800, 600, "OpenGL", nullptr, nullptr); // Windowed
+	glfwMakeContextCurrent(window);
+
+	glfwSetKeyCallback(window, (GLFWkeyfun) InputHandler::KeyCallBack);
+
+	// Setup GLEW
+	glewExperimental = GL_TRUE;
+	glewInit();
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 
 	shaderProgram = CreateShaderProgram("shaders/shader.vs", "shaders/shader.frag");
+	LoadCubeVertices();
+};
 
+void Renderer::LoadCubeVertices() {
 	glGenVertexArrays(1, &vertexArray);
 	glGenBuffers(1, &vertexBuffer);
 	glGenBuffers(1, &elementBuffer);
 	glGenBuffers(1, &colorBuffer);
-	glGenBuffers(1, &colorIndexBuffer);
 
 	glBindVertexArray(vertexArray);
 
@@ -158,18 +202,9 @@ Renderer::Renderer(Cube c) {
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GL_FLOAT), (GLvoid*)0);
 
 	glBindVertexArray(0);
-};
+}
 
-void Renderer::Draw(GLFWwindow* window) {
-
-	// TODO move this out of draw loop
-	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) camera.Rotate(Up, 0.01f);
-	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) camera.Rotate(Down, 0.01f);
-	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) camera.Rotate(Left, 0.01f);
-	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) camera.Rotate(Right, 0.01f);
-	if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) camera.Rotate(TiltLeft, 0.01f);
-	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) camera.Rotate(TiltRight, 0.01f);
-
+bool Renderer::Draw() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.8f, 0.8f, 0.8f, 1);
 
@@ -180,7 +215,7 @@ void Renderer::Draw(GLFWwindow* window) {
 	GLuint cameraUni = glGetUniformLocation(shaderProgram, "camera");
 	GLuint projectionUni = glGetUniformLocation(shaderProgram, "projection");
 
-	glm::mat4 cameraMatrix = camera.GetCameraMatrix();
+	glm::mat4 cameraMatrix = game->camera.GetCameraMatrix();
 	glUniformMatrix4fv(cameraUni, 1, GL_FALSE, glm::value_ptr(cameraMatrix));
 
 	glm::mat4 projection = glm::perspective(glm::radians(55.0f), 800.0f / 600.0f, 0.1f, 100.0f);
@@ -192,15 +227,20 @@ void Renderer::Draw(GLFWwindow* window) {
 		for (int iy = 0; iy < 3; iy++) {
 			for (int iz = 0; iz < 3; iz++) {
 				glm::mat4 model;
-				model = glm::translate(model, glm::vec3(size * (ix - 1), size * (iy - 1), size * (iz - 1)));
+				model = OrientationToMatrix(game->cube.blocks[ix][iy][iz]) * model;
+				model = glm::translate(model, glm::vec3(glm::inverse(model) * glm::vec4(size * (ix - 1), size * (iy - 1), size * (iz - 1), 1)));
 				model = glm::scale(model, glm::vec3(size, size, size));
 				glUniformMatrix4fv(modelUni, 1, GL_FALSE, glm::value_ptr(model));
-
 				glDrawElements(GL_TRIANGLES, sizeof(cubeIndices), GL_UNSIGNED_INT, 0);
 			}
 		}
 	}
+
 	glBindVertexArray(0);
+
+	glfwSwapBuffers(window);
+	glfwPollEvents();
+	return !glfwWindowShouldClose(window);
 };
 
 Renderer::~Renderer() {
@@ -208,4 +248,6 @@ Renderer::~Renderer() {
 	glDeleteBuffers(1, &vertexBuffer);
 	glDeleteBuffers(1, &elementBuffer);
 	glDeleteBuffers(1, &colorBuffer);
+	glfwWindowShouldClose(window);
+	glfwTerminate();
 }

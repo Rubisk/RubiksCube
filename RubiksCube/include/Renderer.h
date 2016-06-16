@@ -1,33 +1,41 @@
 #ifndef RUBIKS_CUBE_RENDERER_H_
 #define RUBIKS_CUBE_RENDERER_H_
 
-#include "Cube.h"
+#include <ctime>
+#include <memory>
+
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
-#include "Camera.h"
 
+#include "Cube.h"
+#include "Camera.h"
+#include "Game.h"
 
 class Renderer
 {
 public:
-	Renderer(Cube cube);
+	Renderer(std::shared_ptr<Game> game);
 
 	Renderer::~Renderer();
 	
-	void Draw(GLFWwindow* window);
+	bool Draw();
 private:
+	std::shared_ptr<Game> game;
+
+	void LoadCubeVertices();
+
+	GLFWwindow* window;
+
 	GLuint shaderProgram;
+	GLuint vertexArray;
 
 	GLuint vertexBuffer;
 	GLuint elementBuffer;
 	GLuint colorBuffer;
-	GLuint colorIndexBuffer;
 
 	Cube cube;
 
-	Camera camera;
-
-	GLuint vertexArray;
+	std::clock_t timeSinceLastFrame;
 };
 
 #endif
