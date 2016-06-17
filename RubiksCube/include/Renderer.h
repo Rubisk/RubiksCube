@@ -3,6 +3,7 @@
 
 #include <ctime>
 #include <memory>
+#include <array>
 
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
@@ -26,6 +27,7 @@ private:
 	void LoadCubeVertices();
 
 	glm::mat4 _GetAnimateBlockMatrix(int x, int y, int z);
+	glm::vec3 SideNotToRender_(int x, int y, int z, std::shared_ptr<Cube>);
 
 	std::weak_ptr<Cube> cube_;
 	std::weak_ptr<Camera> camera_;

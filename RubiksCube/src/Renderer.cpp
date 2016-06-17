@@ -121,31 +121,37 @@ GLfloat colorVertices[] = {
 	0.0f, 0.0f, 0.0f,
 	0.0f, 0.0f, 0.0f,
 
+	// Red
 	1.0f, 0.0f, 0.0f,
 	1.0f, 0.0f, 0.0f,
 	1.0f, 0.0f, 0.0f,
 	1.0f, 0.0f, 0.0f,
 
+	// Orange
 	1.0f, 0.5f, 0.0f,
 	1.0f, 0.5f, 0.0f,
 	1.0f, 0.5f, 0.0f,
 	1.0f, 0.5f, 0.0f,
 
+	// White
 	1.0f, 1.0f, 1.0f,
 	1.0f, 1.0f, 1.0f,
 	1.0f, 1.0f, 1.0f,
 	1.0f, 1.0f, 1.0f,
 
+	// Yellow
 	1.0f, 1.0f, 0.0f,
 	1.0f, 1.0f, 0.0f,
 	1.0f, 1.0f, 0.0f,
 	1.0f, 1.0f, 0.0f,
 
+	// Blue
 	0.0f, 0.0f, 1.0f,
 	0.0f, 0.0f, 1.0f,
 	0.0f, 0.0f, 1.0f,
 	0.0f, 0.0f, 1.0f,
 
+	// Green
 	0.0f, 0.7f, 0.0f,
 	0.0f, 0.7f, 0.0f,
 	0.0f, 0.7f, 0.0f,
@@ -162,6 +168,9 @@ Renderer::Renderer(std::weak_ptr<Cube> cube, std::weak_ptr<Camera> camera) {
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+
 
 	shaderProgram = CreateShaderProgram("shaders/shader.vs", "shaders/shader.frag");
 	LoadCubeVertices();
@@ -207,6 +216,7 @@ void Renderer::Draw() {
 	GLuint modelUni = glGetUniformLocation(shaderProgram, "model");
 	GLuint cameraUni = glGetUniformLocation(shaderProgram, "camera");
 	GLuint projectionUni = glGetUniformLocation(shaderProgram, "projection");
+	GLuint sideNotToRenderUni = glGetUniformLocation(shaderProgram, "sideNotToRender");
 
 	glm::mat4 cameraMatrix = camera->GetCameraMatrix();
 	glUniformMatrix4fv(cameraUni, 1, GL_FALSE, glm::value_ptr(cameraMatrix));
@@ -224,7 +234,11 @@ void Renderer::Draw() {
 				model = glm::translate(model, glm::vec3(glm::inverse(model) * glm::vec4(size * (ix - 1), size * (iy - 1), size * (iz - 1), 1)));
 				model = _GetAnimateBlockMatrix(ix, iy, iz) * model;
 				model = glm::scale(model, glm::vec3(size, size, size));
+
 				glUniformMatrix4fv(modelUni, 1, GL_FALSE, glm::value_ptr(model));
+				glm::vec3 sideNotToRender = SideNotToRender_(ix, iy, iz, cube);
+				glUniform3fv(sideNotToRenderUni, 1, glm::value_ptr(sideNotToRender));
+
 				glDrawElements(GL_TRIANGLES, sizeof(cubeIndices), GL_UNSIGNED_INT, 0);
 			}
 		}
@@ -271,6 +285,30 @@ glm::mat4 Renderer::_GetAnimateBlockMatrix(int x, int y, int z) {
 
 	shouldStopAnimating_ = (currentTime == animationStartTime + animationTime);
 	return animateMatrix;
+}
+
+glm::vec3 Renderer::SideNotToRender_(int x, int y, int z, std::shared_ptr<Cube> cube) {
+	glm::vec3 side = glm::vec3(0, 0, 0);
+	if (IsAnimating()) {
+		switch (animationAxis) {
+		case X:
+			if (x == animationSide + 1) side = glm::vec3(-animationSide * 0.51f, 0, 0);
+			if (x == 1) side = glm::vec3(animationSide * 0.51f, 0, 0);
+			break;
+		case Y:
+			if (y == animationSide + 1) side = glm::vec3(0, -animationSide * 0.51f, 0);
+			if (y == 1) side = glm::vec3(0, animationSide * 0.51f, 0);
+			break;
+		case Z:
+			if (z == animationSide + 1) side = glm::vec3(0, 0, -animationSide * 0.51f);
+			if (z == 1) side = glm::vec3(0, 0, animationSide * 0.51f);
+			break;
+		}
+		glm::mat4 rotation = glm::inverse(OrientationToMatrix__(cube->blocks[x][y][z]));
+		side = glm::vec3(rotation * glm::vec4(side, 0.0f));
+		// std::cout << side.x << " " << side.y << " " << side.z << std::endl;
+	}
+	return side;
 }
 
 Renderer::~Renderer() {
