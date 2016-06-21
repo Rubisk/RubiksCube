@@ -19,10 +19,11 @@ void Game::Start() {
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-	window = glfwCreateWindow(800, 600, "Rubiks Cube", nullptr, nullptr);
+	window = glfwCreateWindow(screenWidthC, screenHeightC, "Rubiks Cube", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 
 	glfwSetKeyCallback(window, (GLFWkeyfun) InputHandler::KeyCallBack);
+	glfwSetMouseButtonCallback(window, (GLFWmousebuttonfun) InputHandler::MouseButtonCallBack);
 	InputHandler::SetGame(this);
 
 	renderer = std::make_shared<Renderer>(cube, camera);

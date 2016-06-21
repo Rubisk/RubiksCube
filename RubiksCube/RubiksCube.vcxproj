@@ -176,6 +176,7 @@
     <ClInclude Include="include\Renderer.h" />
     <ClInclude Include="include\Cube.h" />
     <ClInclude Include="include\Shader.h" />
+    <ClInclude Include="include\Sorting.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag" />

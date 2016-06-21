@@ -6,6 +6,9 @@
 #include "InputHandler.h"
 #include "Renderer.h"
 
+const int screenWidthC = 800;
+const int screenHeightC = 600;
+
 
 class Game {
 public:

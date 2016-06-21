@@ -29,7 +29,7 @@ glm::mat4 OrientationToMatrix__(CubeOrientation orientation) {
 	return matrix;
 }
 
-GLfloat cubeVertices[] = {
+const GLfloat cubeVertices[] = {
 	-0.5f, -0.5f, -0.5f,
 	-0.5f, -0.5f,  0.5f,
 	-0.5f,  0.5f, -0.5f,
@@ -70,7 +70,7 @@ GLfloat cubeVertices[] = {
 	 0.45f,  0.45f,  0.51f,
 };
 
-GLuint cubeIndices[] = {
+const GLuint cubeIndices[] = {
 	// Outer Cube
 	0, 1, 3,
 	0, 2, 3,
@@ -110,7 +110,7 @@ GLuint cubeIndices[] = {
 	28, 30, 31,
 };
 
-GLfloat colorVertices[] = {
+const GLfloat colorVertices[] = {
 	// BLACK INNER CUBE
 	0.0f, 0.0f, 0.0f,
 	0.0f, 0.0f, 0.0f,

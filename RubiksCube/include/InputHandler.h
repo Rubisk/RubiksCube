@@ -17,14 +17,16 @@ public:
 	static void StallGameplayInputs(bool setting);
 
 	static void KeyCallBack(GLFWwindow* window, GLint key, GLint scancode, GLint action, GLint mods);
+
+	static void MouseButtonCallBack(GLFWwindow* window, GLint button, GLint action, GLint mods);
 private:
-	struct Input;
+	struct MouseInput;
 
 	static bool stallGameplayInputs_;
 
 	static void TryProcessStalledInputs_();
 	
-	static std::queue<Input> stalledInputs_;
+	static std::queue<MouseInput> stalledInputs_;
 
 	static Game* game_;
 };

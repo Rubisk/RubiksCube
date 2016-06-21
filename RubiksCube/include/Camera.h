@@ -23,7 +23,7 @@ private:
 
 	float rotationSpeed = 0.003f;
 	std::time_t lastUpdated;
-	glm::vec3 cameraPos = glm::vec3(1, 0, 0);
+	glm::vec3 cameraPos = glm::vec3(0, 0, -1);
 	glm::vec3 up = glm::vec3(0, 1, 0);
 };
 
